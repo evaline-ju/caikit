@@ -27,7 +27,7 @@ import alog
 
 # Local
 from caikit.core.data_model.base import DataBase
-from caikit.core.data_model.streams.data_stream import DataStream
+from caikit.core.signature_parsing import CaikitMethodSignature
 from caikit.interfaces.runtime.data_model.training_management import ModelPointer
 from caikit.runtime.model_management.model_manager import ModelManager
 from caikit.runtime.service_generation.data_stream_source import get_data_stream_source
@@ -213,17 +213,16 @@ def validate_data_model(
 
 
 def build_caikit_library_request_dict(
-    request, model_function: Callable, module_class: Type
+    request,
+    module_signature: CaikitMethodSignature,
 ) -> Dict[str, Any]:
     """
     Build the request kwargs dict.
 
     """
-    # TODO: actually pass module_class from calling
     try:
         # Request messages are data model objects so .from_proto can be used
         # request_data_model_class = getattr(self._inference_service.data_model, type(request).__name__)
-        # TODO: this won't work for compiled services!! need to remove compiled support for service gen
         request_data_model_class = DataBase.get_class_for_proto(request)
         request_data_model = request_data_model_class.from_proto(request)
 
@@ -240,17 +239,13 @@ def build_caikit_library_request_dict(
             if unset_field_name in kwargs_dict:
                 kwargs_dict.pop(unset_field_name)
 
-        # 2. Remove any fields not in the module's .run function
+        # 2. Remove any fields not in the module signature
         absent_field_names = [
-            k
-            for k in kwargs_dict.keys()
-            if k not in module_class.RUN_SIGNATURE.parameters.keys()
+            k for k in kwargs_dict.keys() if k not in module_signature.parameters.keys()
         ]
         for absent_field_name in absent_field_names:
             if absent_field_name in kwargs_dict:
                 kwargs_dict.pop(absent_field_name)
-
-        # TODO: Do the same for train?
 
         # 3. Model Pointers
         for field_name, field_value in kwargs_dict.items():

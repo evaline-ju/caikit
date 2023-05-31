@@ -76,7 +76,6 @@ class ServicePackage:
     ]
     stub_class: Type
     messages: ModuleType
-    data_model_classes: ModuleType
 
 
 class ServicePackageFactory:
@@ -168,15 +167,9 @@ class ServicePackageFactory:
                 "Package with service message class implementations",
             )
 
-            data_model_module = ModuleType(
-                "DataModelClasses",
-                "Package with data model classes",
-            )
-
             for dm_class in request_data_models:
                 # We need the message class that data model serializes to
                 setattr(client_module, dm_class.__name__, type(dm_class().to_proto()))
-                setattr(data_model_module, dm_class.__name__, dm_class)
 
             rpc_jsons = [rpc.create_rpc_json(package_name) for rpc in task_rpc_list]
             service_json = {"service": {"rpcs": rpc_jsons}}
@@ -190,7 +183,6 @@ class ServicePackageFactory:
                 registration_function=grpc_service.registration_function,
                 stub_class=grpc_service.client_stub_class,
                 messages=client_module,
-                data_model_classes=data_model_module,
             )
 
     # Implementation details for pure python service packages #
