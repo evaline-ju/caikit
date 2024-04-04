@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from functools import partial
 from typing import Any, Dict, Iterable, List, Optional, Type, Union, get_args
 import asyncio
+import gc
 import inspect
 import io
 import json
@@ -133,6 +134,7 @@ class RuntimeHTTPServer(RuntimeServerBase):
                 "id": uuid.uuid4().hex,
             }
             log.error("<RUN59871106E>", error_content, exc_info=True)
+            gc.collect()
             return JSONResponse(
                 content=jsonable_encoder(error_content),
                 status_code=err_code,
@@ -141,6 +143,7 @@ class RuntimeHTTPServer(RuntimeServerBase):
         # Response validation
         @self.app.exception_handler(ResponseValidationError)
         async def validation_exception_handler(_, exc: ResponseValidationError):
+            gc.collect()
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content=jsonable_encoder({"detail": exc.errors(), "body": exc.body}),
